@@ -1,0 +1,55 @@
+#page-local-profile-pages-editadvanced,
+#page-admin-user-editadvanced,
+#page-user-editadvanced,
+#page-user-edit {
+
+  main[role="main"] form {
+    display: flex;
+    flex-direction: column;
+
+    #fitem_id_city,
+    #fitem_id_country,
+    #fitem_id_timezone,
+    #id_moodle_additional_names,
+    #id_moodle_optional,
+    #id_moodle_interests,
+    #fitem_id_moodlenetprofile {
+      display: none;
+    }
+
+    
+    #id_moodle_picture {
+      order: 3;
+    }
+
+    #fgroup_id_buttonar {
+      order: 5;
+    }
+
+    & > .fdescription.required {
+      order: 6;
+    }
+
+    .collapsible-actions {
+      & > a {
+        padding-left: 20px !important;
+        background: url([[pix:t/expanded]]) 2px center no-repeat;
+
+        &.collapsed {
+          background: url([[pix:t/collapsed]]) 2px center no-repeat;
+        }
+      }
+    }
+  }
+
+  .warning-popup-message {
+    & > div:not(:first-child) {
+      padding-top: 20px;
+    }
+  }
+
+  #fitem_id_passwordpolicyinfo {
+    margin-top: 25px;
+  }
+
+}
