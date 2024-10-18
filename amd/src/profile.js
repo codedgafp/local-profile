@@ -100,8 +100,3 @@ define([
         },
     };
 });
-// ARIA: ignorer la lecture de la balise <aside>
-var asideElement = document.getElementById("block-region-content");
-if(asideElement){
-    asideElement.setAttribute("aria-hidden", "true");
-}
