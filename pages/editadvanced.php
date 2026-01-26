@@ -107,7 +107,6 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
         // Set the page titles.
         $PAGE->set_title(get_string('adduser', 'local_profile'));
         $PAGE->set_heading(get_string('adduser', 'local_profile'));
-
     } else {
 
         // Editing existing user.
@@ -194,12 +193,14 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
     }
 
     // Create form.
-    $userform = new local_profile_user_form(new moodle_url($PAGE->url, ['returnto' => $returnto]),
+    $userform = new local_profile_user_form(
+        new moodle_url($PAGE->url, ['returnto' => $returnto]),
         [
             'editoroptions' => $editoroptions,
             'filemanageroptions' => $filemanageroptions,
             'user' => $user,
-        ]);
+        ]
+    );
 
     // Deciding where to send the user back in most cases.
 
@@ -236,8 +237,15 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
             unset($usernew->id);
             $createpassword = !empty($usernew->createpassword);
             unset($usernew->createpassword);
-            $usernew = file_postupdate_standard_editor($usernew, 'description', $editoroptions, null, 'user', 'profile',
-                null);
+            $usernew = file_postupdate_standard_editor(
+                $usernew,
+                'description',
+                $editoroptions,
+                null,
+                'user',
+                'profile',
+                null
+            );
             $usernew->username = local_mentor_core_mail_to_username($usernew->email);
 
             $usernew->mnethostid = $CFG->mnet_localhost_id; // Always local user.
@@ -251,23 +259,18 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
                 }
             } else {
                 $usernew->password = AUTH_PASSWORD_NOT_CACHED;
-
-                // Patch Mentor : si pas de mot de passe fourni.
-                if ($createpassword || empty($usernew->newpassword)) {
-                    $usernew->newpassword = '';
-                }
-                // Fin patch.
             }
 
-            // Patch mentor : création du compte dans le LDAP.
+            // START patch mentor : Create user in authplugin system.
             if (!$authplugin->user_create($usernew, $usernew->newpassword)) {
                 throw new \moodle_exception('cannotupdateuseronexauth', '', '', $user->auth);
             }
-            // Fin patch.
+            // END patch mentor.
 
             $usernew->id = user_create_user($usernew, false, false);
 
-            if (!$authplugin->is_internal() && $authplugin->can_change_password()
+            if (
+                !$authplugin->is_internal() && $authplugin->can_change_password()
                 && !empty($usernew->newpassword) && !$authplugin->user_update_password($usernew, $usernew->newpassword)
             ) {
                 // Do not stop here, we need to finish user creation.
@@ -275,31 +278,38 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
             }
             $usercreated = true;
         } else {
-            
-            $usernew = file_postupdate_standard_editor($usernew, 'description', $editoroptions, $usercontext, 'user',
-                'profile', 0);
-               
+
+            $usernew = file_postupdate_standard_editor(
+                $usernew,
+                'description',
+                $editoroptions,
+                $usercontext,
+                'user',
+                'profile',
+                0
+            );
+
             // Handle external user checkbox
-            if(isset($usernew->externaluser)){
+            if (isset($usernew->externaluser)) {
                 $externalrole =  \local_mentor_core\profile_api::get_role_by_name('utilisateurexterne');
                 $fieldrole = $DB->get_record('user_info_field', ['shortname' => 'roleMentor']);
                 $context = context_system::instance();
-                if($usernew->externaluser == '1'){
+                if ($usernew->externaluser == '1') {
                     role_assign($externalrole->id, $usernew->id, $context->id);
                     $usernew->profile_field_roleMentor = $externalrole->shortname;
                 } else {
-                    role_unassign($externalrole->id, $usernew->id, $context->id); 
+                    role_unassign($externalrole->id, $usernew->id, $context->id);
                     $newuserfieldrolementor = $DB->get_record('user_info_data', ['userid' => $usernew->id, 'fieldid' => $fieldrole->id]);
                     $usernew->profile_field_roleMentor = $newuserfieldrolementor->data;
                 }
             }
-          
+
             // Pass a true old $user here.
             if (!$authplugin->user_update($user, $usernew)) {
                 // Auth update failed.
                 throw new \moodle_exception('cannotupdateuseronexauth', 'error', $user->auth);
             }
-            
+
             user_update_user($usernew, false, false);
 
             // Account is suspended, send email to user.
@@ -349,7 +359,7 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
                 if (!empty($CFG->passwordchangelogout)) {
                     // We can use SID of other user safely here because they are unique,.
                     // the problem here is we do not want to logout admin here when changing own password.
-                    \core\session\manager::kill_user_sessions($usernew->id, session_id());
+                    \core\session\manager::destroy_user_sessions($usernew->id, session_id());
                 }
                 if (!empty($usernew->signoutofotherservices)) {
                     webservice::delete_user_ws_tokens($usernew->id);
@@ -358,7 +368,7 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
 
             // Force logout if user just suspended.
             if (isset($usernew->suspended) && $usernew->suspended && !$user->suspended) {
-                \core\session\manager::kill_user_sessions($user->id);
+                \core\session\manager::destroy_user_sessions($user->id);
             }
         }
 
@@ -367,10 +377,9 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
         // Update preferences.
         useredit_update_user_preference($usernew);
 
-        // Fix auth_forcepasswordchange permission.
-        if (property_exists($usernew, 'preference_auth_forcepasswordchange')) {
-            set_user_preference('auth_forcepasswordchange', $usernew->preference_auth_forcepasswordchange, $usernew->id);
-        }
+        // changing password is managed by oidc system
+        if ($usernew->auth == 'oidc' && exists_auth_plugin('oidc_sync'))
+            unset_user_preference('auth_forcepasswordchange', $usernew->id);
 
         // Update tags.
         if (empty($USER->newadminuser) && isset($usernew->interests)) {
@@ -390,7 +399,7 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
 
         // Save custom profile fields data.
         profile_save_data($usernew);
-       
+
         // Reload from db.
         $usernewreload = $DB->get_record('user', ['id' => $usernew->id]);
 
@@ -452,7 +461,7 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
             }
         } else {
             \core\session\manager::gc(); // Remove stale sessions.
-           
+
             // Patch Edunao.
             if (!empty($returnurl)) {
                 redirect($returnurl);
@@ -520,9 +529,8 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
 
     // Add the regions and departments list to load it into the dropdown lists.
     echo '<div id="regions" style="display:none;">' . json_encode(local_mentor_specialization_get_regions_and_departments()) .
-         '</div>';
+        '</div>';
 }
 
 // And proper footer.
 echo $OUTPUT->footer();
-
