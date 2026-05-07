@@ -296,7 +296,6 @@ if ($id > 0 && !\local_mentor_core\profile_api::has_profile_config_access($id) &
                 $context = context_system::instance();
                 if ($usernew->externaluser == '1') {
                     role_assign($externalrole->id, $usernew->id, $context->id);
-                    $usernew->profile_field_roleMentor = $externalrole->shortname;
                 } else {
                     role_unassign($externalrole->id, $usernew->id, $context->id);
                     $newuserfieldrolementor = $DB->get_record('user_info_data', ['userid' => $usernew->id, 'fieldid' => $fieldrole->id]);
