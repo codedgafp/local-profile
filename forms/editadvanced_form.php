@@ -86,6 +86,7 @@ class local_profile_user_form extends user_editadvanced_form {
         $authoptions = [$enabled => [], $disabled => []];
         $cannotchangepass = [];
         $cannotchangeusername = [];
+        $bypassauth = ['oidc', 'oidc_sync']; # Patch Mentor #MEN-1319
         foreach ($auths as $auth => $unused) {
             $authinst = get_auth_plugin($auth);
 
@@ -93,7 +94,7 @@ class local_profile_user_form extends user_editadvanced_form {
                 $cannotchangeusername[] = $auth;
             }
 
-            $passwordurl = $authinst->change_password_url();
+            $passwordurl = in_array($auth, $bypassauth) ? null : $authinst->change_password_url(); # Patch Mentor #MEN-1319
             if (!($authinst->can_change_password() && empty($passwordurl))) {
                 // This is unlikely but we can not create account without password
                 // when plugin uses passwords, we need to set it initially at least.
